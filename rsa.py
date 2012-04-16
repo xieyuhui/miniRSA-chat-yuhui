@@ -132,20 +132,20 @@ class RSA():
                 blk = blk >> 8
         return L
 
-    def encrypt(self, message):
+    def encrypt(self, message, e, modN):
         numL = self.string2numList(message)
         blockSize = 1
         blocks = self.numList2blocks(numL, blockSize)
-        e = self.publicKeyE
-        modN = self.publicKeyN
+        #e = self.publicKeyE
+        #modN = self.publicKeyN
         secret = []
         for i in range(len(blocks)):
             secret.append(self.modExp(blocks[i], e, modN))
         return secret 
 
-    def decrypt(self, secret):
-        d = self.privateKeyD
-        modN = self.publicKeyN
+    def decrypt(self, secret, modN, d):
+        #d = self.privateKeyD
+        #modN = self.publicKeyN
         blockSize = 1
         blocks = []
         for i in range(len(secret)):
