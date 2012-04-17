@@ -6,10 +6,28 @@ import java.util.ArrayList;
 
 import miniRSA.MiniRSA;
 
-public class ChatClient {
-	public static void main(String[] args) throws UnknownHostException {
+public class ChatClient extends java.lang.Thread {
+	static int port;
+	static BigInteger e, c;
+	
+	ChatClient(int p, BigInteger _e, BigInteger _c) {
+		port = p;
+		e = _e;
+		c = _c;		
+	}
+	
+	@Override
+	public void run() {	
 		try {
-			Socket client = new Socket(InetAddress.getByName("localhost"), 9090);
+			connect();
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void connect() throws UnknownHostException {
+		try {
+			Socket client = new Socket(InetAddress.getByName("localhost"), port);
 			DataOutputStream socketOut = new DataOutputStream(client.getOutputStream());
 			DataInputStream socketIn = new DataInputStream(client.getInputStream());
 			//DataInputStream console = new DataInputStream(System.in);
@@ -17,17 +35,9 @@ public class ChatClient {
 			
 			boolean done = false;
 			String line = "";
-			
-			BigInteger e, c;
-			String[] input = new String[2];
-			System.out.println("Please enter the public key (e, c), first e, then c");
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-			input = in.readLine().split(" ");
-			e = new BigInteger(input[0]);
-			c = new BigInteger(input[1]);
-			System.out.println("Please enter a sentence to encrypt");
-			
 			while (!done) {	
+				System.out.println("type, enter .bye to quit");
 				line = in.readLine();
 				System.out.print("ENCRYPTED " + line);
 				if (!line.equalsIgnoreCase(".bye")) {

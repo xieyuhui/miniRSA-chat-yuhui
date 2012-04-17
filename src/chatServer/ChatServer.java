@@ -9,29 +9,26 @@ public class ChatServer {
 	private Socket          socket   = null;
 	private ServerSocket    server   = null;
 	private DataInputStream streamIn =  null;
+	static ChatClient client;
+	private static BigInteger d, n, e, c;
 
 	public ChatServer(int port) {
 		try	{
 			System.out.println("Binding to port " + port + ", please wait  ...");
 			//server = new ServerSocket(port);  
-			server = new ServerSocket(9090, 0, InetAddress.getByName("localhost"));
+			server = new ServerSocket(port, 0, InetAddress.getByName("localhost"));
 			System.out.println("Server started: " + server);
 			System.out.println("Waiting for a client ..."); 
+			client.start();
 			socket = server.accept();
 			System.out.println("Client accepted: " + socket);
 			open();
 			
-			String[] input = new String[2];
-			System.out.println("Please enter the private key (d, c), first d, then c");
-			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-			input = in.readLine().split(" ");
-			BigInteger d = new BigInteger(input[0]);
-			BigInteger n = new BigInteger(input[1]);
 			boolean done = false;
 			while (!done) { 
 				try {
 					String line = streamIn.readLine();
-					System.out.println("Received: \n" + line);
+					System.out.println("Server received: \n" + line);
 					if (!line.equalsIgnoreCase(".bye")) {
 						MiniRSA.decryptPrint(line, d, n); 
 					}
@@ -55,12 +52,35 @@ public class ChatServer {
 		if (socket != null)    socket.close();
 		if (streamIn != null)  streamIn.close();
 	}
-	public static void main(String args[])	{  
-		ChatServer server = null;
-		if (args.length != 1)
-			System.out.println("Usage: java ChatServer port");
-		else
-			server = new ChatServer(Integer.parseInt(args[0]));
+	public static void main(String args[]) {  
+		if (args.length != 6 && args.length != 4) {
+			System.out.println("Chat Server Usage: server_port client_port public_key_e public_key_c private_key_d private_key_c");
+			System.out.println("Cracker Server Usage: server_port client_port public_key_e public_key_c");
+			return;
+		}
+		if (args.length == 6) {
+			int serverPort = Integer.parseInt(args[0]);
+			int clientPort = Integer.parseInt(args[1]);
+			e = new BigInteger(args[2]);
+			c = new BigInteger(args[3]);
+			d = new BigInteger(args[4]);
+			n = new BigInteger(args[5]);
+			client = new ChatClient(clientPort, e, c);
+			ChatServer cs = new ChatServer(serverPort);	
+		}
+		else if (args.length == 4) {
+			int serverPort = Integer.parseInt(args[0]);
+			int clientPort = Integer.parseInt(args[1]);
+			e = new BigInteger(args[2]);
+			c = new BigInteger(args[3]);
+			d = MiniRSA.crack(e, c);
+			n = new BigInteger(args[3]);
+			client = new ChatClient(clientPort, e, c);
+			ChatServer cs = new ChatServer(serverPort);	
+			
+		}
+		
+		
 	}
 }
 

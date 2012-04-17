@@ -299,6 +299,10 @@ public class MiniRSA {
 		System.out.println(", Private Key = (" + d + ", " + c + ")");
 	}
 	
+	/**
+	 * Ask user to input the public key (e, c) and message, print out the encrypt result.
+	 * @throws IOException
+	 */
 	public static void encryptPrint() throws IOException {
 		BigInteger e, c;
 		String[] input = new String[2];
@@ -316,6 +320,10 @@ public class MiniRSA {
 		}
 	}
 	
+	/**
+	 * Ask user to input the private key (d, c) and message, print out the decrypt result.
+	 * @throws IOException
+	 */
 	public static void decryptPrint() throws IOException {
 		BigInteger d, c, m, n;
 		String[] input = new String[2];
@@ -348,12 +356,27 @@ public class MiniRSA {
 			System.out.println((char)m.intValue() + " " + m);
 		}
 	}
+	
+	public static BigInteger crack(BigInteger e, BigInteger n) {
+		BigInteger p, q, d;
+		BigInteger[] totient = totient(n, e);
+		p = totient[0];
+		q = totient[1];
+		d = e.modInverse(totient[2]);
+		
+		System.out.println("Cracking result:");
+		System.out.println("a was " + p + " b was " + q);
+		System.out.println("The totient was " + totient[2]);
+		System.out.println("D was found out to be " + d);
+		System.out.println();
+		return d;
+	}
 
 	/**
 	 * Asks user to input the public key and cipher text.
 	 * @throws IOException
 	 */
-	private static void crack() throws IOException {
+	private static void printCrack() throws IOException {
 		BigInteger p, q, c, n, m, e, d;
 		String[] input = new String[2];
 		System.out.println("Enter the public key value:");
@@ -390,7 +413,7 @@ public class MiniRSA {
 		generateKey();
 		encryptPrint();
 		decryptPrint();
-		crack();
+		printCrack();
 	}
 }
 
