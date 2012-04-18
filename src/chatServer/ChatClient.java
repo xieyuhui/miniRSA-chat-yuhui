@@ -7,11 +7,18 @@ import java.util.ArrayList;
 import miniRSA.MiniRSA;
 
 public class ChatClient extends java.lang.Thread {
-	static int port;
+	static int yourPort = -1;
+	static int otherPort = -1;
 	static BigInteger e, c;
 	
+	ChatClient(int p1, int p2, BigInteger _e, BigInteger _c) {
+		yourPort = p1;
+		otherPort = p2;
+		e = _e;
+		c = _c;		
+	}
 	ChatClient(int p, BigInteger _e, BigInteger _c) {
-		port = p;
+		otherPort = p;
 		e = _e;
 		c = _c;		
 	}
@@ -27,12 +34,17 @@ public class ChatClient extends java.lang.Thread {
 	
 	public static void connect() throws UnknownHostException {
 		try {
-			Socket client = new Socket(InetAddress.getByName("localhost"), port);
+			Socket client = new Socket(InetAddress.getByName("localhost"), otherPort);
 			DataOutputStream socketOut = new DataOutputStream(client.getOutputStream());
 			DataInputStream socketIn = new DataInputStream(client.getInputStream());
 			//DataInputStream console = new DataInputStream(System.in);
 			System.out.println("Connected to " + InetAddress.getByName("localhost") + ". Enter text:");
 			
+			//write your port to other server
+			if (yourPort != -1) {
+				socketOut.writeBytes(Integer.toString(yourPort));
+			}
+		
 			boolean done = false;
 			String line = "";
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
