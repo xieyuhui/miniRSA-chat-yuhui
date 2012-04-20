@@ -1,77 +1,131 @@
 package chatServer;
-import java.io.*;
 import java.math.BigInteger;
 import java.net.*;
 import java.util.ArrayList;
+import java.io.*;
 
 import miniRSA.MiniRSA;
 
-public class ChatClient extends java.lang.Thread {
-	static int yourPort = -1;
-	static int otherPort = -1;
-	static BigInteger e, c;
-	
-	ChatClient(int p1, int p2, BigInteger _e, BigInteger _c) {
-		yourPort = p1;
-		otherPort = p2;
-		e = _e;
-		c = _c;		
+public class ChatClient implements Runnable {  
+	private static Socket socket = null;
+	private static BigInteger e, c, d, n, srv_e, srv_c;
+	private static Thread  writingTd = null;
+
+	ChatClient(Socket s) {
+		socket = s;
 	}
-	ChatClient(int p, BigInteger _e, BigInteger _c) {
-		otherPort = p;
-		e = _e;
-		c = _c;		
-	}
-	
-	@Override
-	public void run() {	
-		try {
-			connect();
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
+
+	public void chat() {
+		try	{
+	        writingTd = new Thread(this); 
+	        writingTd.start();
+	        
+	        System.out.println("Reading from client...");
+	        DataInputStream  streamIn = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+
+	        String fromServer = "";
+	        String[] clientPubKey = null;
+	        //while (!in.ready()) {}
+			fromServer = streamIn.readLine();			
+			clientPubKey = fromServer.split("#");
+			srv_e = new BigInteger(clientPubKey[0]);
+			srv_c = new BigInteger(clientPubKey[1]);
+			System.out.println("Received client public key(e, c): \n" + srv_e + " " + srv_c);
+			
+			
+	        fromServer = "";
+			while ((fromServer = streamIn.readUTF()) != null) {
+				System.out.println("Received: \n" + fromServer);
+				if (fromServer.equals(".bye"))
+					break;
+				MiniRSA.decryptPrint(fromServer, d, n); 
+				System.out.println("DECRYPTED to " + fromServer);
+			}
+			streamIn.close();
+			socket.close();
+		}
+		catch (IOException e) {
+			System.err.println("Unable to read from client!"); 
 		}
 	}
 	
-	public static void connect() throws UnknownHostException {
+	@Override
+	public void run() {
 		try {
-			Socket client = new Socket(InetAddress.getByName("localhost"), otherPort);
-			DataOutputStream socketOut = new DataOutputStream(client.getOutputStream());
-			DataInputStream socketIn = new DataInputStream(client.getInputStream());
-			//DataInputStream console = new DataInputStream(System.in);
-			System.out.println("Connected to " + InetAddress.getByName("localhost") + ". Enter text:");
+			System.out.println("Writing to server...");
+			DataOutputStream streamOut = new DataOutputStream(socket.getOutputStream());
+			streamOut.writeBytes(e.toString() + "#" + c.toString() + '\n');
 			
-			//write your port to other server
-			if (yourPort != -1) {
-				socketOut.writeBytes(Integer.toString(yourPort));
+			while(srv_e == null) {
+				//waiting client send his public key to me
 			}
-		
+			
 			boolean done = false;
-			String line = "";
+			String toServer = "";
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			while (!done) {	
 				System.out.println("type, enter .bye to quit");
-				line = in.readLine();
-				System.out.print("ENCRYPTED " + line);
-				if (!line.equalsIgnoreCase(".bye")) {
-					ArrayList<BigInteger> encryptedNumList = MiniRSA.encrypt(line, c, e);
-					line = "";
+				toServer = in.readLine();
+				System.out.print("ENCRYPTED " + toServer);
+				if (!toServer.equalsIgnoreCase(".bye")) {
+					ArrayList<BigInteger> encryptedNumList = MiniRSA.encrypt(toServer, srv_c, srv_e);
+					toServer = "";
 					for (int i = 0; i < encryptedNumList.size(); i++) {
-						line += encryptedNumList.get(i).toString();
-						line += " ";
+						toServer += encryptedNumList.get(i).toString();
+						toServer += " ";
 					}
-					System.out.println(" to " + line);
+					System.out.println(" to " + toServer);
 				}
 				else done = true;
-				socketOut.writeBytes(line + '\n');
+				streamOut.writeBytes(toServer + '\n');
 			}
-
-			socketOut.close(); 
-			socketIn.close(); 
-			client.close();
+			streamOut.close(); 
 		} 
-		catch (UnknownHostException e) {
-			System.err.println(InetAddress.getByName("localhost") + " unknown host."); } 
 		catch (IOException e) {
-			System.err.println("I/O error with " + InetAddress.getByName("localhost")); }
+			System.err.println("Unable to write to " + socket); }
+
 	}
+
+	public static void main(String args[]) throws IOException {  
+		if (args.length != 5) {
+			System.out.println("Server Usage: port# public_key_e public_key_c private_key_d private_key_c");
+			return;
+		}
+		int port = Integer.parseInt(args[0]);
+		e = new BigInteger(args[1]);
+		c = new BigInteger(args[2]);
+		d = new BigInteger(args[3]);
+		n = new BigInteger(args[4]);
+
+		Socket skt = new Socket(InetAddress.getByName("localhost"), port);
+		System.out.println("Accepted by server: " + skt);
+		
+		ChatServer cc = new ChatServer(skt);
+		cc.chat();
+		
+		skt.close();
+	}
+
+	
+		
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
