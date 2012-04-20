@@ -28,21 +28,17 @@ public class ChatServer implements Runnable {
 			clientPubKey = fromClient.split("#");
 			cli_e = new BigInteger(clientPubKey[0]);
 			cli_c = new BigInteger(clientPubKey[1]);
-			System.out.println("Received client public key(e, c): \n" + cli_e + " " + cli_c);
 
 			writingTd = new Thread(this); 
 	        writingTd.start();
 
 	        fromClient = "";
 			while ((fromClient = streamIn.readLine()) != null) {
-				System.out.println("Received: \n" + fromClient);
 				if (fromClient.equals(".bye"))
 					break;
 				MiniRSA.decryptPrint(fromClient, d, n); 
-				System.out.println("DECRYPTED to " + fromClient);
 			}
 			streamIn.close();
-			socket.close();
 		}
 		catch (IOException e) {
 			System.err.println("Unable to read from client!"); 
@@ -52,7 +48,6 @@ public class ChatServer implements Runnable {
 	@Override
 	public void run() {
 		try {			
-			System.out.println("Writing to client...");
 			DataOutputStream streamOut = new DataOutputStream(socket.getOutputStream());
 			streamOut.writeBytes(e.toString() + "#" + c.toString() + '\n');
 
@@ -62,7 +57,6 @@ public class ChatServer implements Runnable {
 			while (!done) {	
 				System.out.println("server: type, enter .bye to quit");
 				toClient = in.readLine();
-				System.out.print("ENCRYPTED " + toClient);
 				if (!toClient.equalsIgnoreCase(".bye")) {
 					ArrayList<BigInteger> encryptedNumList = MiniRSA.encrypt(toClient, cli_c, cli_e);
 					toClient = "";
@@ -70,13 +64,11 @@ public class ChatServer implements Runnable {
 						toClient += encryptedNumList.get(i).toString();
 						toClient += " ";
 					}
-					System.out.println(" to " + toClient);
+					streamOut.writeBytes(toClient + '\n');
 				}
 				else done = true;
-				streamOut.writeBytes(toClient + '\n');
 			}
 			streamOut.close(); 
-			socket.close();
 		} 
 		catch (IOException e) {
 			System.err.println("Unable to write to " + socket); }
@@ -84,22 +76,17 @@ public class ChatServer implements Runnable {
 	}
 
 	public static void main(String[] args) throws IOException  {  
-		if (args.length != 3) {
-			System.out.println("Server Usage: port# primeLowerBount primeHigherBound");
+		if (args.length != 5) {
+			System.out.println("Server Usage: port# p_from p_end q_from q_end");
 			return;
 		}
-		int port = Integer.parseInt(args[0]);
-		BigInteger low = new BigInteger(args[1]);
-		BigInteger high = new BigInteger(args[2]);
+		int port = Integer.parseInt(args[0]);		
+		BigInteger[] keys = MiniRSA.generateKey(args[1], args[2], args[3], args[4]);
+		e = keys[0];
+		c = keys[1];
+		d = keys[2];
+		n = keys[3];
 		
-		
-		
-		
-		
-		e = new BigInteger(args[1]);
-		c = new BigInteger(args[2]);
-		d = new BigInteger(args[3]);
-		n = new BigInteger(args[4]);
 		System.out.println("Binding to port " + port + ", please wait  ...");
 		ServerSocket server = new ServerSocket(port);
 		System.out.println("Server started: " + server);
@@ -109,8 +96,7 @@ public class ChatServer implements Runnable {
 
 		ChatServer cs = new ChatServer(skt);
 		cs.chat();
+		socket.close();
+		server.close();
 	}
-
-
-
 }

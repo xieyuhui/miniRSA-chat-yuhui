@@ -21,26 +21,20 @@ public class ChatClient implements Runnable {
 	        
 	        BufferedReader streamIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			String fromServer = "";
-	        
 
 	        String[] clientPubKey = null;
 			fromServer = streamIn.readLine();			
 			clientPubKey = fromServer.split("#");
 			srv_e = new BigInteger(clientPubKey[0]);
-			srv_c = new BigInteger(clientPubKey[1]);
-			System.out.println("Received client public key(e, c): \n" + srv_e + " " + srv_c);
-			
+			srv_c = new BigInteger(clientPubKey[1]);	
 			
 	        fromServer = "";
 			while ((fromServer = streamIn.readLine()) != null) {
-				System.out.println("Received: \n" + fromServer);
 				if (fromServer.equals(".bye"))
 					break;
 				MiniRSA.decryptPrint(fromServer, d, n); 
-				System.out.println("client DECRYPTED to " + fromServer);
 			}
 			streamIn.close();
-			socket.close();
 		}
 	
 	
@@ -56,8 +50,7 @@ public class ChatClient implements Runnable {
 			boolean done = false;
 			while (!done) {	
 				System.out.println("client: type, enter .bye to quit");
-				toServer = in.readLine();
-				System.out.print("ENCRYPTED " + toServer);				
+				toServer = in.readLine();			
 				if (!toServer.equalsIgnoreCase(".bye")) {
 					ArrayList<BigInteger> encryptedNumList = MiniRSA.encrypt(toServer, srv_c, srv_e);
 					toServer = "";
@@ -66,12 +59,11 @@ public class ChatClient implements Runnable {
 						toServer += " ";
 					}
 					System.out.println(" to " + toServer);
+					streamOut.writeBytes(toServer + '\n');
 				}
 				else done = true;
-				streamOut.writeBytes(toServer + '\n');
 			}
 			streamOut.close(); 
-			socket.close();
 		} 
 		catch (IOException e) {
 			System.err.println("Unable to write to " + socket); }
@@ -80,20 +72,22 @@ public class ChatClient implements Runnable {
 
 	public static void main(String[] args) throws IOException {  
 		if (args.length != 5) {
-			System.out.println("Server Usage: port# public_key_e public_key_c private_key_d private_key_c");
+			System.out.println("Server Usage: port# p_from p_end q_from q_end");
 			return;
 		}
-		int port = Integer.parseInt(args[0]);
-		e = new BigInteger(args[1]);
-		c = new BigInteger(args[2]);
-		d = new BigInteger(args[3]);
-		n = new BigInteger(args[4]);
+		int port = Integer.parseInt(args[0]);		
+		BigInteger[] keys = MiniRSA.generateKey(args[1], args[2], args[3], args[4]);
+		e = keys[0];
+		c = keys[1];
+		d = keys[2];
+		n = keys[3];
 
 		Socket skt = new Socket(InetAddress.getByName("localhost"), port);
 		System.out.println("Accepted by server: " + skt);
 		
 		ChatClient cc = new ChatClient(skt);
 		cc.chat();
+		socket.close();
 	}
 
 	
