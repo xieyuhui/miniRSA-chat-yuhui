@@ -377,7 +377,7 @@ public class MiniRSA {
 	 * @throws IOException
 	 */
 	private static void printCrack(BigInteger e, BigInteger n) throws IOException {
-		BigInteger p, q, d;
+		BigInteger p, q, c, m, d;
 		BigInteger[] totient = totient(n, e);
 		p = totient[0];
 		q = totient[1];
@@ -387,6 +387,19 @@ public class MiniRSA {
 		System.out.println("a was " + p + " b was " + q);
 		System.out.println("The totient was " + totient[2]);
 		System.out.println("D was found out to be " + d);
+		while (true) {
+			System.out.println("Enter a letter to encrypt/decrypt, or quit to exit");
+			Scanner inscanner = new Scanner(System.in);
+			String s = inscanner.next();
+			if (s.equals("quit")) {
+				System.out.println("Done");
+				break;
+			}
+			c = new BigInteger(s);
+			m = c.modPow(d, n);
+			System.out.println("This char decrypted to " + m);
+			System.out.println("The letter is " + (char)m.intValue());
+		}
 	}
 	
 	public static void main(String[] args) throws IOException {
