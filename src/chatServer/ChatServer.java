@@ -1,115 +1,120 @@
 package chatServer;
 import java.math.BigInteger;
 import java.net.*;
+import java.util.ArrayList;
 import java.io.*;
 
 import miniRSA.MiniRSA;
 
-public class ChatServer {  
-	private Socket          socket   = null;
-	private ServerSocket    server   = null;
-	private DataInputStream streamIn =  null;
-	static int yourPort = -1;
-	static int otherPort = -1;
-	static ChatClient client;
-	String line;
-	private static BigInteger d, n, e, c;
+public class ChatServer implements Runnable {  
+	private static Socket socket = null;
+	private static BigInteger e, c, d, n, cli_e, cli_c;
+	private static Thread  writingTd = null;
 
-	public ChatServer(int port) {
-		try	{
-			System.out.println("Binding to port " + port + ", please wait  ...");
-			//server = new ServerSocket(port);  
-			server = new ServerSocket(port, 0, InetAddress.getByName("localhost"));
-			System.out.println("Server started: " + server);
-			System.out.println("Waiting for a client ..."); 
-			
-			if (otherPort != -1) {
-				client.start();
-			}
-						
-			socket = server.accept();
-			System.out.println("Client accepted: " + socket);
-			open();
-			
-			//
-			if (otherPort == -1) {
-				line = streamIn.readLine();
-				System.out.println("Server received other server's port: \n" + line);
-				otherPort = Integer.parseInt(line);
-				client = new ChatClient(otherPort, e, c);
-				client.start();
-			}
+	ChatServer(Socket s) {
+		socket = s;
+	}
 
+	public void chat() {
+		try	{	        
+	        System.out.println("Reading from client...");
+			//first get client public key(e, c)
+	        
+	        DataInputStream  streamIn = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
+	        
+			String fromClient = "";
+			String[] clientPubKey = null;
+			//while (!in.ready()) {}
+			fromClient = streamIn.readLine();	
+			clientPubKey = fromClient.split("#");
+			cli_e = new BigInteger(clientPubKey[0]);
+			cli_c = new BigInteger(clientPubKey[1]);
+			System.out.println("Received client public key(e, c): \n" + cli_e + " " + cli_c);
+			
+			writingTd = new Thread(this); 
+	        writingTd.start();
+
+	        fromClient = "";
+			while ((fromClient = streamIn.readUTF()) != null) {
+				System.out.println("Received: \n" + fromClient);
+				if (fromClient.equals(".bye"))
+					break;
+				MiniRSA.decryptPrint(fromClient, d, n); 
+				System.out.println("DECRYPTED to " + fromClient);
+			}
+			streamIn.close();
+		}
+		catch (IOException e) {
+			System.err.println("Unable to read from client!"); 
+		}
+	}
+	
+	@Override
+	public void run() {
+		try {			
+			System.out.println("Writing to client...");
+			DataOutputStream streamOut = new DataOutputStream(socket.getOutputStream());
+//			System.out.println("e#c = " + e.toString() + "#" + c.toString());
+			streamOut.writeBytes(e.toString() + "#" + c.toString() + '\n');
+            
+			
+//			while(cli_e == null) {
+//				//waiting client send his public key to me
+//			}
+			
 			boolean done = false;
-			while (!done) { 
-				try {
-					line = streamIn.readLine();
-					System.out.println("Server received: \n" + line);
-					if (!line.equalsIgnoreCase(".bye")) {
-						MiniRSA.decryptPrint(line, d, n); 
+			String toClient = "";
+			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+			while (!done) {	
+				System.out.println("type, enter .bye to quit");
+				toClient = in.readLine();
+				System.out.print("ENCRYPTED " + toClient);
+				if (!toClient.equalsIgnoreCase(".bye")) {
+					ArrayList<BigInteger> encryptedNumList = MiniRSA.encrypt(toClient, cli_c, cli_e);
+					toClient = "";
+					for (int i = 0; i < encryptedNumList.size(); i++) {
+						toClient += encryptedNumList.get(i).toString();
+						toClient += " ";
 					}
-					done = line.equals(".bye");
+					System.out.println(" to " + toClient);
 				}
-				catch(IOException ioe) {
-					done = true;
-				}
+				else done = true;
+				streamOut.writeBytes(toClient + '\n');
 			}
-			
-			close();
-		}
-		catch(IOException ioe) {
-			System.out.println(ioe); 
-		}
+			streamOut.close(); 
+		} 
+		catch (IOException e) {
+			System.err.println("Unable to write to " + socket); }
+
 	}
-	public void open() throws IOException {
-		streamIn = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-	}
-	public void close() throws IOException	{
-		if (socket != null)    socket.close();
-		if (streamIn != null)  streamIn.close();
-	}
-	public static void main(String args[]) {  
-		if (args.length != 6 && args.length != 4 && args.length != 5) {
-			System.out.println("Chat Server-1 Usage: your_port public_key_e public_key_c private_key_d private_key_c");
-			System.out.println("Chat Server-2 Usage: your_port other_port public_key_e public_key_c private_key_d private_key_c");
-			System.out.println("Cracker Server Usage: server_port client_port public_key_e public_key_c");
+
+	public static void main(String args[]) throws IOException {  
+		if (args.length != 5) {
+			System.out.println("Server Usage: port# public_key_e public_key_c private_key_d private_key_c");
 			return;
 		}
-		//first set up the server, don't know other's server port
-		if (args.length == 5) {
-			yourPort = Integer.parseInt(args[0]);
-			e = new BigInteger(args[1]);
-			c = new BigInteger(args[2]);
-			d = new BigInteger(args[3]);
-			n = new BigInteger(args[4]);
-			ChatServer cs = new ChatServer(yourPort);	
-		}
-		//second set up the server, known other's server port
-		if (args.length == 6) {
-			yourPort = Integer.parseInt(args[0]);
-			otherPort = Integer.parseInt(args[1]);
-			e = new BigInteger(args[2]);
-			c = new BigInteger(args[3]);
-			d = new BigInteger(args[4]);
-			n = new BigInteger(args[5]);
-			client = new ChatClient(yourPort, otherPort, e, c);
-			ChatServer cs = new ChatServer(yourPort);	
-		}
-		else if (args.length == 4) {
-			int serverPort = Integer.parseInt(args[0]);
-			int clientPort = Integer.parseInt(args[1]);
-			e = new BigInteger(args[2]);
-			c = new BigInteger(args[3]);
-			d = MiniRSA.crack(e, c);
-			n = new BigInteger(args[3]);
-			client = new ChatClient(clientPort, e, c);
-			ChatServer cs = new ChatServer(serverPort);	
-			
-		}
+		int port = Integer.parseInt(args[0]);
+		e = new BigInteger(args[1]);
+		c = new BigInteger(args[2]);
+		d = new BigInteger(args[3]);
+		n = new BigInteger(args[4]);
+		System.out.println("Binding to port " + port + ", please wait  ...");
+		ServerSocket server = new ServerSocket(port);
+		System.out.println("Server started: " + server);
+		System.out.println("Waiting for a client ..."); 
+		Socket skt = server.accept();
+		System.out.println("Client accepted: " + skt);
 		
-		
+		ChatServer cs = new ChatServer(skt);
+		cs.chat();
+		skt.close();
+		server.close();
 	}
+
+	
+		
 }
+
 
 
 
