@@ -376,15 +376,8 @@ public class MiniRSA {
 	 * Asks user to input the public key and cipher text.
 	 * @throws IOException
 	 */
-	private static void printCrack() throws IOException {
-		BigInteger p, q, c, n, m, e, d;
-		String[] input = new String[2];
-		System.out.println("Enter the public key value:");
-		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-		input = in.readLine().split(" ");
-		e = new BigInteger(input[0]);
-		n = new BigInteger(input[1]);
-
+	private static void printCrack(BigInteger e, BigInteger n) throws IOException {
+		BigInteger p, q, d;
 		BigInteger[] totient = totient(n, e);
 		p = totient[0];
 		q = totient[1];
@@ -394,26 +387,16 @@ public class MiniRSA {
 		System.out.println("a was " + p + " b was " + q);
 		System.out.println("The totient was " + totient[2]);
 		System.out.println("D was found out to be " + d);
-		while (true) {
-			System.out.println("Enter a letter to encrypt/decrypt, or quit to exit");
-			Scanner inscanner = new Scanner(System.in);
-			String s = inscanner.next();
-			if (s.equals("quit")) {
-				System.out.println("Done");
-				break;
-			}
-			c = new BigInteger(s);
-			m = c.modPow(d, n);
-			System.out.println("This char decrypted to " + m);
-			System.out.println("The letter is " + (char)m.intValue());
-		}
 	}
 	
 	public static void main(String[] args) throws IOException {
-		generateKey();
-		encryptPrint();
-		decryptPrint();
-		printCrack();
+		if (args.length != 2) {
+			System.out.println("Server Usage: public_e public_c");
+			return;
+		}
+		BigInteger e = new BigInteger(args[0]);
+		BigInteger c = new BigInteger(args[1]);
+		printCrack(e, c);
 	}
 }
 

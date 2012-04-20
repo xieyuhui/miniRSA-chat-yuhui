@@ -6,10 +6,11 @@ import java.io.*;
 
 import miniRSA.MiniRSA;
 
-public class ChatServer implements Runnable {  
+public class ChatServer implements Runnable { 
+	
 	private static Socket socket = null;
-	private static BigInteger e, c, d, n, cli_e, cli_c;
 	private static Thread  writingTd = null;
+	private static BigInteger e, c, d, n, cli_e, cli_c;
 
 	ChatServer(Socket s) {
 		socket = s;
@@ -19,23 +20,21 @@ public class ChatServer implements Runnable {
 		try	{	        
 	        System.out.println("Reading from client...");
 			//first get client public key(e, c)
-	        
-	        DataInputStream  streamIn = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-	        
+
+	        BufferedReader streamIn = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			String fromClient = "";
 			String[] clientPubKey = null;
-			//while (!in.ready()) {}
 			fromClient = streamIn.readLine();	
 			clientPubKey = fromClient.split("#");
 			cli_e = new BigInteger(clientPubKey[0]);
 			cli_c = new BigInteger(clientPubKey[1]);
 			System.out.println("Received client public key(e, c): \n" + cli_e + " " + cli_c);
-			
+
 			writingTd = new Thread(this); 
 	        writingTd.start();
 
 	        fromClient = "";
-			while ((fromClient = streamIn.readUTF()) != null) {
+			while ((fromClient = streamIn.readLine()) != null) {
 				System.out.println("Received: \n" + fromClient);
 				if (fromClient.equals(".bye"))
 					break;
@@ -43,30 +42,25 @@ public class ChatServer implements Runnable {
 				System.out.println("DECRYPTED to " + fromClient);
 			}
 			streamIn.close();
+			socket.close();
 		}
 		catch (IOException e) {
 			System.err.println("Unable to read from client!"); 
 		}
 	}
-	
+
 	@Override
 	public void run() {
 		try {			
 			System.out.println("Writing to client...");
 			DataOutputStream streamOut = new DataOutputStream(socket.getOutputStream());
-//			System.out.println("e#c = " + e.toString() + "#" + c.toString());
 			streamOut.writeBytes(e.toString() + "#" + c.toString() + '\n');
-            
-			
-//			while(cli_e == null) {
-//				//waiting client send his public key to me
-//			}
-			
+
 			boolean done = false;
 			String toClient = "";
 			BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 			while (!done) {	
-				System.out.println("type, enter .bye to quit");
+				System.out.println("server: type, enter .bye to quit");
 				toClient = in.readLine();
 				System.out.print("ENCRYPTED " + toClient);
 				if (!toClient.equalsIgnoreCase(".bye")) {
@@ -82,18 +76,26 @@ public class ChatServer implements Runnable {
 				streamOut.writeBytes(toClient + '\n');
 			}
 			streamOut.close(); 
+			socket.close();
 		} 
 		catch (IOException e) {
 			System.err.println("Unable to write to " + socket); }
 
 	}
 
-	public static void main(String args[]) throws IOException {  
-		if (args.length != 5) {
-			System.out.println("Server Usage: port# public_key_e public_key_c private_key_d private_key_c");
+	public static void main(String[] args) throws IOException  {  
+		if (args.length != 3) {
+			System.out.println("Server Usage: port# primeLowerBount primeHigherBound");
 			return;
 		}
 		int port = Integer.parseInt(args[0]);
+		BigInteger low = new BigInteger(args[1]);
+		BigInteger high = new BigInteger(args[2]);
+		
+		
+		
+		
+		
 		e = new BigInteger(args[1]);
 		c = new BigInteger(args[2]);
 		d = new BigInteger(args[3]);
@@ -104,23 +106,11 @@ public class ChatServer implements Runnable {
 		System.out.println("Waiting for a client ..."); 
 		Socket skt = server.accept();
 		System.out.println("Client accepted: " + skt);
-		
+
 		ChatServer cs = new ChatServer(skt);
 		cs.chat();
-		skt.close();
-		server.close();
 	}
 
-	
-		
+
+
 }
-
-
-
-
-
-
-
-
-
-
