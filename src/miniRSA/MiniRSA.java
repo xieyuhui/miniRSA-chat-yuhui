@@ -81,7 +81,7 @@ public class MiniRSA {
 	 *integers in reverse order. For example, int2baseTwo(6) = [0, 1, 1]
 	 */
 	ArrayList<Long> int2baseTwo(long x) {
-		ArrayList<Long> twoBitList = new ArrayList<>();
+		ArrayList<Long> twoBitList = new ArrayList<Long>();
 		if (x == 0) {
 			twoBitList.add((long) 0);
 			return twoBitList;
@@ -197,7 +197,7 @@ public class MiniRSA {
 	 * @return
 	 */
 	private static ArrayList<Integer> stringToNumList(String s) {
-		ArrayList<Integer> numList = new ArrayList<>();
+		ArrayList<Integer> numList = new ArrayList<Integer>();
 		for (int i = 0; i < s.length(); i++) {
 			numList.add((int) (s.charAt(i)));
 		}
@@ -206,7 +206,7 @@ public class MiniRSA {
 
 	public static ArrayList<BigInteger> encrypt(String message, BigInteger n, BigInteger e) {
 		ArrayList<Integer> beforEncryptList = stringToNumList(message);
-		ArrayList<BigInteger> afterEncryptList = new ArrayList<>();
+		ArrayList<BigInteger> afterEncryptList = new ArrayList<BigInteger>();
 		for (int i = 0; i < beforEncryptList.size(); i++) {
 			long x = beforEncryptList.get(i);
 			afterEncryptList.add((modulo(BigInteger.valueOf(x), e, n)));
@@ -214,15 +214,15 @@ public class MiniRSA {
 		return afterEncryptList;
 	}
 
-	private static String decrypt (ArrayList<BigInteger> msgNumList, BigInteger n, BigInteger d) {
-		String msg = "";
-		for (int i = 0; i < msgNumList.size(); i++) {
-			int decryptedChar = modulo(msgNumList.get(i), d, n).intValue();
-			String aChar = new Character((char)decryptedChar).toString();
-			msg = msg + aChar;
-		}
-		return msg;
-	}
+//	private static String decrypt (ArrayList<BigInteger> msgNumList, BigInteger n, BigInteger d) {
+//		String msg = "";
+//		for (int i = 0; i < msgNumList.size(); i++) {
+//			int decryptedChar = modulo(msgNumList.get(i), d, n).intValue();
+//			String aChar = new Character((char)decryptedChar).toString();
+//			msg = msg + aChar;
+//		}
+//		return msg;
+//	}
 
 	/**
 	 * Given n (n = p * q) and e, try to figure out the p and q.
