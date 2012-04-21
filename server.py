@@ -26,10 +26,19 @@ def read(s, rsa):
 
 def write(s, rsa):
     global showEncrypted
+    global modN
+    global keyE
     while True:
         typed = raw_input("")
         if typed == ".bye":
             break
+        if typed == "_showkeys_":
+            print "Other's key N", modN
+            print "Other's key E", keyE
+            print "My key N", rsa.publicKeyN
+            print "My key E", rsa.publicKeyE
+            print "My private key D", rsa.privateKeyD
+            continue
         if typed == "_showenc_":
             showEncrypted = True
             continue

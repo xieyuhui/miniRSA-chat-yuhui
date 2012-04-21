@@ -1,0 +1,66 @@
+Kishin Manglani and Yuhui Xie
+
+Implementation:
+
+- We used python to build the server and client, and Java to build the cracker. 
+- When the client connects to the server it sends the public keys to the server and then the server sends its keys.
+- This is done in the background after the connection has been made.
+- Each has two threads, one to read messages and one to write them.
+- The respective threads encrypt and decrypt messages sent.
+- The various features work using booleans or checking what the user inputted and displays the relevant information.
+
+Usage:
+
+./python server.py PORTNUM
+./python client.py PORTNUM
+
+.bye = exits the conversation and program
+_showenc_ = displays encryption (numbers) of sent and received messages, along with message
+_hideenc_ = hides encryption
+_showkeys_ = displays users public and private keys, in addition to other users public keys
+
+Example:
+
+./python server.py 12345
+Enter nth prime: 12 
+Enter mth prime: 12
+You cannot use the same number
+Enter mth prime: 13
+waiting to accept
+Type .bye to exit
+_showkeys_
+Other's key N 12317
+Other's key E 4877
+My key N 1517
+My key E 1339
+My private key D 499
+hey (typed here)
+hello (not typed here)
+_showenc_
+what's up (typed here)
+[1207, 835, 896, 873, 869, 102, 237, 598, 704]
+[154967, 249061, 3342, 48138, 286343, 132254, 23165, 222502]
+not much (not typed here)
+_hideenc_
+goodbye
+.bye
+
+
+./python client.py 12345
+Enter nth prime: 29
+Enter mth prime: 30
+Type .bye to exit
+hey (not typed here)
+hello (typed here)
+what's up (not typed here)
+not much (typed here)
+goodbye (not typed here)
+Chat ended by other user
+
+
+
+Collaboration:
+We both worked together extensively on this project. Initially we were going to use a java server and python client.
+However, we decided to work together on the python code because it was easier to code in.
+We generally pair programmed in the lab when working together. Though initially things took longer, we soon worked faster together.
+Overall, it was very enjoyable working together. We got to learn more about each other as individuals and learn different coding styles.
