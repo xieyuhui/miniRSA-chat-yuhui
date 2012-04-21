@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bn/python
 import random
 
 class RSA():
